@@ -1,16 +1,27 @@
+# -*- coding: utf-8 -*-
+
 import fire
 import os
 from sender import sender
 
 
 class mailhelper:
-    def login(self, user, password):
+
+    def setuser(self, user, password):
         '''
-         登录指令\n
+         设置用户信息指令\n
          param user 用户邮箱地址\n
-         param password 邮箱授权码\n
+         param password 邮箱授权码/密码，根据邮箱的要求决定
         '''
-        sender().login(True, user, password)
+        sender().setUserInfo(user, password)
+
+    def setsmtp(self, address, port):
+        '''
+         设置smtp服务器指令\n
+         param address 用户邮箱地址\n
+         param port 邮箱授权码\n
+        '''
+        sender().setSMTPServer(address, port)
 
     def sendmails(self, mailList, subjectText, msgText):
         '''
@@ -20,11 +31,14 @@ class mailhelper:
         param msgText 邮文，为txt格式，包含邮件的主要内容
         '''
         mailCore = sender()
-        mailCore.login()
+        userRet = mailCore.getUserInfo()
+        smtpRet = mailCore.getSMTPServer()
         # 判断输入的是否正确
-        if not mailCore.isLogin():
-            print('尚未绑定邮箱信息，请先使用login命令绑定邮箱信息')
+        if not userRet:
+            print('用户信息不完善，请用setuser命令设置用户信息')
             return
+        elif not smtpRet:
+            print('smtp服务器信息不完善，请用setsmtp命令设置smtp服务器及其端口信息')
         if not os.path.exists(mailList):
             print('发送名单路径不存在')
             return

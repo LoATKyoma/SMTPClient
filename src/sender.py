@@ -21,34 +21,100 @@ class sender:
         self.mailUser = None
         self.mailPass = None
         self.mailHost = None
+        self.mailPort = None
 
-    def login(self, isChange=False, user=None, password=None):
+    def setUserInfo(self, user, password):
         """
         录入用户信息\n
-        param isChange 是否要更新登录信息，是则根据user与password更新info.user文件内容，否则根据info.user文件登录\n
         param user 你的邮箱地址\n
-        param password 邮箱授权码
+        param password 邮箱授权码/密码，这个根据使用的邮箱种类决定
         """
-        if not os.path.isfile('info.user'):
-            file = open('info.user', mode='w', encoding='utf-8')
+        if not os.path.isfile('config'):
+            file = open('config', mode='w', encoding='utf-8')
             file.close()
-        if isChange:
-            self.mailUser = user
-            self.mailPass = password
-            self.mailHost = 'smtp.' + self.mailUser[self.mailUser.find('@') +
-                                                    1:]
-            file = open('info.user', mode='w', encoding='utf-8')
-            str = self.mailUser + ' ' + self.mailPass
-            file.write(str)
-            file.close()
+        newConfig = ''
+        hasOldUser = False
+        hasReplace = False
+        with open('config', mode='r', encoding='utf-8') as config:
+            for line in config:
+                if hasOldUser and not hasReplace:
+                    line = line.replace(line, user + ' ' + password + '\n')
+                    hasReplace = True
+                newConfig += line
+                if line.find('[user]') != -1:
+                    hasOldUser = True
+        if hasOldUser:
+            with open('config', mode='w', encoding='utf-8') as config:
+                config.write(newConfig)
         else:
-            file = open('info.user', mode='r', encoding='utf-8')
-            str = file.read()
-            if len(str) > 0:
-                self.mailUser = str[:str.find(' ')]
-                self.mailPass = str[str.find(' ') + 1:]
-                self.mailHost = 'smtp.' + self.mailUser[self.mailUser.
-                                                        find('@') + 1:]
+            with open('config', mode='a+', encoding='utf-8') as config:
+                config.write('[user]\n' + user + ' ' + password + '\n')
+
+    def setSMTPServer(self, address, port):
+        """
+        录入SMTP服务器和端口信息\n
+        param address smtp服务器地址\n
+        param port 使用的端口
+        """
+        if not os.path.isfile('config'):
+            file = open('config', mode='w', encoding='utf-8')
+            file.close()
+        newConfig = ''
+        hasOldServer = False
+        hasReplace = False
+        with open('config', mode='r', encoding='utf-8') as config:
+            for line in config:
+                if hasOldServer and not hasReplace:
+                    line = line.replace(line, address + ' ' + str(port) + '\n')
+                newConfig += line
+                if line.find('[smtp]') != -1:
+                    hasOldServer = True
+        if hasOldServer:
+            with open('config', mode='w', encoding='utf-8') as config:
+                config.write(newConfig)
+        else:
+            with open('config', mode='a+', encoding='utf-8') as config:
+                config.write('[smtp]\n' + address + ' ' + str(port) + '\n')
+
+    def getUserInfo(self):
+        '''
+        获取用户信息
+        '''
+        hasUser = False
+        userConfig = ''
+        with open('config', mode='r', encoding='utf-8') as config:
+            for line in config:
+                if hasUser:
+                    userConfig = line
+                    break
+                if line.find('[user]') != -1:
+                    hasUser = True
+        if not hasUser:
+            return False
+        userConfig = userConfig.replace('\n', '')
+        self.mailUser = userConfig[:userConfig.find(' ')]
+        self.mailPass = userConfig[userConfig.find(' ') + 1:]
+        return True
+
+    def getSMTPServer(self):
+        '''
+        获取smtp服务器信息
+        '''
+        hasServer = False
+        serverConfig = ''
+        with open('config', mode='r', encoding='utf-8') as config:
+            for line in config:
+                if hasServer:
+                    serverConfig = line
+                    break
+                if line.find('[smtp]') != -1:
+                    hasServer = True
+        if not hasServer:
+            return False
+        serverConfig = serverConfig.replace('\n', '')
+        self.mailHost = serverConfig[:serverConfig.find(' ')]
+        self.mailPort = int(serverConfig[serverConfig.find(' ') + 1:])
+        return True
 
     def sendMail(self, tarUser, title, textMsg, ext=[], senderName=''):
         '''
@@ -108,8 +174,8 @@ class sender:
                     print('无法识别的文件内容')
         try:
             # 发送邮件
-            smtp = smtplib.SMTP()
-            smtp.connect(self.mailHost, 25)
+            smtp = smtplib.SMTP(self.mailHost, self.mailPort)
+            smtp.starttls()
             smtp.login(self.mailUser, self.mailPass)
             smtp.sendmail(self.mailUser, tarUser, message.as_string())
             smtp.quit()
