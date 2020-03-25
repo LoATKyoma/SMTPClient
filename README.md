@@ -55,17 +55,17 @@
     ```python
     mailhelper setuser yourmail@hotmail.com password
     mailhelper setsmtp smtp.office365.com 587
-    mailsendmails maillist.csv subject.txt msg.txt
+    mailhelper sendmails maillist.csv subject.txt msg.txt
     ```
 
     * 以后的使用，假如不需要变更邮箱和smtp服务器则直接发送邮件即可
 
     ```python
-    mailsendmails maillist.csv subject.txt msg.txt
+    mailhelper sendmails maillist.csv subject.txt msg.txt
     ```
 >
 * **版本**  
   稍微可靠的测试版本0.1.1
 >
 * **其他**  
-  里面还包含了图形界面发送邮件的源码，需要者可以自行更改[setup.py](./src/setup.py)重新打包
+  ~~里面还包含了图形界面发送邮件的源码，需要者可以自行更改[setup.py](./src/setup.py)重新打包~~
